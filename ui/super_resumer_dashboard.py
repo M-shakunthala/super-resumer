@@ -4,7 +4,6 @@ Streamlit UI for job application tracking and management
 """
 
 import streamlit as st
-import pandas as pd
 from typing import List, Dict, Any
 import datetime
 import json
@@ -16,7 +15,7 @@ class SuperResumerDashboard:
     """Streamlit dashboard for Super Resumer."""
     
     def __init__(self):
-        self.setup_page()
+        pass
         
     def setup_page(self):
         """Setup Streamlit page configuration."""
@@ -169,6 +168,32 @@ class SuperResumerDashboard:
         except (ValueError, TypeError):
             return str(raw)[:19]
 
+    def _parse_job_date(self, job: Dict[str, Any]) -> datetime.datetime | None:
+        """Parse the most relevant date for sorting jobs."""
+        for field in ("applied_date", "rejected_date", "updated_at", "created_at"):
+            raw = job.get(field)
+            if not raw:
+                continue
+            try:
+                if isinstance(raw, datetime.datetime):
+                    dt = raw
+                else:
+                    dt = datetime.datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
+                if dt.tzinfo is not None:
+                    dt = dt.astimezone(datetime.timezone.utc).replace(tzinfo=None)
+                return dt
+            except (ValueError, TypeError):
+                continue
+        return None
+
+    def _sort_jobs_for_display(self, jobs: List[Dict[str, Any]], status_filter: str) -> List[Dict[str, Any]]:
+        """Sort jobs by recency across the dashboard views."""
+        return sorted(
+            jobs,
+            key=lambda job: self._parse_job_date(job) or datetime.datetime.min,
+            reverse=True,
+        )
+
     def render_jobs_table(self, jobs: List[Dict[str, Any]], status_filter: str = "all"):
         """Render jobs table with filtering."""
         if not jobs:
@@ -185,17 +210,62 @@ class SuperResumerDashboard:
             st.info(f"No jobs with status: {status_filter}")
             return
         
-        # Create DataFrame
-        df_data = []
-        for job in filtered_jobs:
-            # Format source name
+        display_jobs = self._sort_jobs_for_display(filtered_jobs, status_filter)
+
+        if status_filter == "all":
+            # Pick up to 3 jobs per source, total 10, sorted by recency
+            source_buckets: dict = {}
+            for job in display_jobs:
+                src = job.get('source', 'unknown')
+                source_buckets.setdefault(src, []).append(job)
+            selected: list = []
+            per_source = max(1, 10 // max(len(source_buckets), 1))
+            for src_jobs in source_buckets.values():
+                selected.extend(src_jobs[:per_source])
+            # top up to 10 if some sources had fewer
+            remaining = [j for j in display_jobs if j not in selected]
+            selected.extend(remaining[:max(0, 10 - len(selected))])
+            display_jobs = selected[:10]
+
+        st.caption(f"Showing {len(display_jobs)} job(s)")
+
+        if status_filter == "all":
+            def _status_label(job):
+                s = job.get('status', 'pending')
+                if s == 'applied':
+                    return 'Auto-Applied' if job.get('auto_applied') else 'Applied'
+                if s == 'pending_review':
+                    return 'Manual Review'
+                if s == 'rejected':
+                    return 'Rejected'
+                return 'Pending'
+
+            def _source_label(job):
+                s = job.get('source', 'N/A')
+                return 'Company Websites' if s == 'company_websites' else s.title()
+
+            header = '| # | Job Title | Company | Salary | Match | Source | Status | Applied Date |'
+            sep    = '|---|-----------|---------|--------|------:|--------|--------|--------------|'
+            lines  = [header, sep]
+            for i, job in enumerate(display_jobs, 1):
+                title   = str(job.get('title', 'N/A')).replace('|', '-')
+                company = str(job.get('company', 'N/A')).replace('|', '-')
+                salary  = str(job.get('salary') or '').replace('|', '-')
+                match   = job.get('match_score', 0)
+                source  = _source_label(job)
+                status  = _status_label(job)
+                date    = self._format_applied_date(job)
+                lines.append(f'| {i} | {title} | {company} | {salary} | {match}% | {source} | {status} | {date} |')
+            st.markdown('\n'.join(lines))
+            return display_jobs
+
+        for index, job in enumerate(display_jobs, start=1):
             source = job.get('source', 'N/A')
             if source == 'company_websites':
                 source = 'Company Websites'
             else:
                 source = source.title()
-            
-            # Custom status display
+
             status = job.get('status', 'pending')
             if status == 'applied':
                 if job.get('auto_applied'):
@@ -208,38 +278,20 @@ class SuperResumerDashboard:
                 display_status = 'Rejected'
             else:
                 display_status = 'Pending'
-            
-            df_data.append({
-                'Title': job.get('title', 'N/A'),
-                'Company': job.get('company', 'N/A'),
-                'Location': job.get('location', 'N/A'),
-                'Salary': job.get('salary', 'N/A'),
-                'Match Score': f"{job.get('match_score', 0)}%",
-                'Source': source,
-                'Status': display_status,
-                'Applied Date': self._format_applied_date(job),
-                'Resume': job.get('match_analysis', {}).get('resume_type', 'N/A') if isinstance(job.get('match_analysis'), dict) else 'N/A'
-            })
-        
-        df = pd.DataFrame(df_data)
-        
-        # Display table
-        st.dataframe(
-            df,
-            width='stretch',
-            hide_index=True,
-            column_config={
-                "Title": st.column_config.TextColumn("Job Title", width="medium"),
-                "Company": st.column_config.TextColumn("Company", width="medium"),
-                "Match Score": st.column_config.TextColumn("Match %", width="small"),
-                "Source": st.column_config.TextColumn("Source", width="small"),
-                "Status": st.column_config.TextColumn("Status", width="small"),
-                "Applied Date": st.column_config.TextColumn("Applied Date", width="medium"),
-                "Resume": st.column_config.TextColumn("Resume Used", width="medium"),
-            }
-        )
-        
-        return filtered_jobs
+
+            title = job.get('title', 'N/A')
+            company = job.get('company', 'N/A')
+            location = job.get('location', 'N/A')
+            salary = job.get('salary', 'N/A')
+            match_score = job.get('match_score', 0)
+            resume_type = job.get('match_analysis', {}).get('resume_type', 'N/A') if isinstance(job.get('match_analysis'), dict) else 'N/A'
+
+            st.markdown(f"### {index}. {title} · {company}")
+            st.write(f"**Company:** {company} | **Location:** {location} | **Salary:** {salary} | **Match:** {match_score}%")
+            st.write(f"**Source:** {source} | **Status:** {display_status} | **Resume:** {resume_type}")
+            st.markdown("---")
+
+        return display_jobs
     
     def render_job_details(self, job: Dict[str, Any]):
         """Render detailed job information."""
@@ -400,6 +452,7 @@ class SuperResumerDashboard:
         
         # Render statistics
         self.render_job_statistics(jobs)
+        st.markdown("---")
         
         # Status filter tabs
         tab1, tab2, tab3, tab4 = st.tabs([

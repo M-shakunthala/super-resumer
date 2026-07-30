@@ -21,17 +21,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-AUTO_SEARCH_INTERVAL_SEC = 300  # 5 minutes
-
-
-def _seconds_until_next_search() -> int:
-    """Seconds remaining until the next auto-search (0 = due now)."""
-    last = st.session_state.get("last_search_time")
-    if last is None:
-        return 0
-    elapsed = time.time() - last
-    return max(0, int(AUTO_SEARCH_INTERVAL_SEC - elapsed))
-
 
 def _merge_jobs_from_search(new_jobs: list) -> tuple[int, int]:
     """Merge workflow results into session jobs. Returns (added, newly_applied)."""
@@ -124,7 +113,6 @@ def main():
     if "jobs" not in st.session_state:
         st.session_state.jobs = load_jobs()
         st.session_state.workflow_state = None
-        st.session_state.auto_search_enabled = True
         st.session_state.last_search_time = None
         st.session_state.last_search_added = 0
         st.session_state.last_search_applied = 0
@@ -141,63 +129,27 @@ def main():
             except Exception as e:
                 st.error(f"❌ Error loading resumes: {str(e)}")
     
-    # Auto-search control in sidebar
-    st.sidebar.subheader("🤖 Automation")
-    st.session_state.auto_search_enabled = st.sidebar.checkbox(
-        "Enable Auto-Search", value=st.session_state.auto_search_enabled
-    )
-    if st.session_state.last_search_time:
-        last_search = datetime.datetime.fromtimestamp(st.session_state.last_search_time)
-        st.sidebar.write(f"Last search: {last_search.strftime('%d %b %Y, %H:%M:%S')}")
-        st.sidebar.caption(
-            f"Last cycle: +{st.session_state.get('last_search_added', 0)} jobs, "
-            f"{st.session_state.get('last_search_applied', 0)} applied"
-        )
-    st.sidebar.caption(
-        "Auto-search runs every 5 min **while this browser tab stays open**."
-    )
-
-    # Live countdown + auto-search (fragment reruns every second; must use sidebar context)
-    run_every = 1 if st.session_state.auto_search_enabled else None
-
-    with st.sidebar:
-
-        @st.fragment(run_every=run_every)
-        def auto_search_clock():
-            remaining = _seconds_until_next_search()
-            minutes_left = remaining // 60
-            seconds_left = remaining % 60
-
-            st.markdown("### ⏱️ Next Auto-Search")
-            st.markdown(f"**{minutes_left:02d}:{seconds_left:02d}**")
-            st.caption(
-                f"Counts down live · searches every {AUTO_SEARCH_INTERVAL_SEC // 60} min"
-            )
-
-            if not st.session_state.auto_search_enabled:
-                return
-
-            if st.session_state.auto_search_in_progress:
-                st.caption("🔍 Searching for jobs…")
-                return
-
-            if remaining > 0:
-                return
-
+    # Manual search button
+    st.sidebar.subheader("🤖 Job Search")
+    if st.sidebar.button("🔍 Search & Apply Now", use_container_width=True):
+        if not st.session_state.auto_search_in_progress:
             st.session_state.auto_search_in_progress = True
             try:
-                with st.spinner("🔍 Auto-searching for jobs…"):
+                with st.spinner("🔍 Searching and applying to jobs…"):
                     _run_auto_search(orchestrator, controls)
             except Exception as e:
-                logger.error("Auto-search error: %s", e)
-                st.error(f"❌ Auto-search failed: {e}")
-                st.session_state.last_search_time = time.time()
+                logger.error("Search error: %s", e)
+                st.error(f"❌ Search failed: {e}")
             finally:
                 st.session_state.auto_search_in_progress = False
-
             st.rerun()
-
-        auto_search_clock()
+    if st.session_state.last_search_time:
+        last_search = datetime.datetime.fromtimestamp(st.session_state.last_search_time)
+        st.sidebar.caption(f"Last search: {last_search.strftime('%d %b %Y, %H:%M:%S')}")
+        st.sidebar.caption(
+            f"+{st.session_state.get('last_search_added', 0)} jobs, "
+            f"{st.session_state.get('last_search_applied', 0)} applied"
+        )
     
     # Render main dashboard
     dashboard.render_main_content(st.session_state.jobs)

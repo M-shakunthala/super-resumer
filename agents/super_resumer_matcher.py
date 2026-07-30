@@ -197,131 +197,16 @@ class SuperResumerMatcher:
         return str(response)
     
     def calculate_match_score(self, job: Dict[str, Any]) -> Dict[str, Any]:
-        """Calculate match score for a job using RAG or fallback."""
-        if not self.llm:
-            return {"match_score": 0, "analysis": "LLM not available"}
-        
-        job_description = job.get('description', '')
-        if not job_description:
-            return {"match_score": 0, "analysis": "No job description"}
-        
-        # Detect appropriate resume
+        """Calculate match score using fast keyword-based matching."""
+        job_description = job.get('description', '') or job.get('title', '')
         tech_stack = self.detect_tech_stack(job_description)
-        
-        # Select appropriate resume data
-        resume_data = None
-        resume_type = "Unknown"
-        
-        if tech_stack == 'csharp' and self.csharp_vectorstore:
-            resume_data = self.csharp_vectorstore
+        if tech_stack == 'csharp':
             resume_type = "C# Developer"
-        elif tech_stack == 'python_ai' and self.python_vectorstore:
-            resume_data = self.python_vectorstore
+        elif tech_stack == 'python_ai':
             resume_type = "Python AI Developer"
         else:
-            # Use both or default to one
-            if self.csharp_vectorstore:
-                resume_data = self.csharp_vectorstore
-                resume_type = "C# Developer (default)"
-            elif self.python_vectorstore:
-                resume_data = self.python_vectorstore
-                resume_type = "Python AI Developer (default)"
-            else:
-                return {"match_score": 0, "analysis": "No resumes loaded"}
-        
-        try:
-            # Check if using vector store or text chunks
-            if FAISS_AVAILABLE and hasattr(resume_data, 'as_retriever'):
-                # Use RAG with vector store
-                from langchain.chains import RetrievalQA
-                qa_chain = RetrievalQA.from_chain_type(
-                    llm=self.llm,
-                    chain_type="stuff",
-                    retriever=resume_data.as_retriever(search_kwargs={"k": 3})
-                )
-                
-                # Analyze match
-                analysis_prompt = f"""
-                Analyze this job description and determine how well it matches the resume context provided.
-                Job Description: {job_description}
-                
-                Provide a match score from 0-100 and explain your reasoning.
-                Consider: skills match, experience level, role alignment, and requirements.
-                
-                Return your answer in this format:
-                MATCH_SCORE: [score]
-                ANALYSIS: [your analysis]
-                RESUME_TYPE: [resume type used]
-                """
-                
-                result = qa_chain.run(analysis_prompt)
-            else:
-                # Use direct text analysis with resume chunks
-                resume_text = "\n".join(resume_data) if isinstance(resume_data, list) else str(resume_data)
-                
-                analysis_prompt = f"""
-                Analyze this job description and determine how well it matches the resume provided.
-                
-                Job Description: {job_description}
-                
-                Resume: {resume_text[:2000]}  # First 2000 chars to avoid token limits
-                
-                Provide a match score from 0-100 and explain your reasoning.
-                Consider: skills match, experience level, role alignment, and requirements.
-                
-                Return your answer in this format:
-                MATCH_SCORE: [score]
-                ANALYSIS: [your analysis]
-                RESUME_TYPE: [resume type used]
-                """
-                
-                result = self._invoke_llm(analysis_prompt)
-            
-            # Parse result (same for both methods)
-            match_score = 0
-            analysis = "Analysis failed"
-            
-            for line in result.split('\n'):
-                if 'MATCH_SCORE:' in line:
-                    try:
-                        match_score = int(line.split('MATCH_SCORE:')[1].strip())
-                    except:
-                        pass
-                elif 'ANALYSIS:' in line:
-                    analysis = line.split('ANALYSIS:')[1].strip()
-            
-            return {
-                "match_score": match_score,
-                "analysis": analysis,
-                "resume_type": resume_type,
-                "tech_stack_detected": tech_stack
-            }
-            
-        except Exception as e:
-            logger.error(f"Error calculating match score: {str(e)}")
-            # Fallback to keyword-based matching
-            logger.info("Using fallback keyword-based matching")
-            return self._fallback_match_score(job_description, resume_type, tech_stack)
-            
-            # Parse result (same for both methods)
-            match_score = 0
-            analysis = "Analysis failed"
-            
-            for line in result.split('\n'):
-                if 'MATCH_SCORE:' in line:
-                    try:
-                        match_score = int(line.split('MATCH_SCORE:')[1].strip())
-                    except:
-                        pass
-                elif 'ANALYSIS:' in line:
-                    analysis = line.split('ANALYSIS:')[1].strip()
-            
-            return {
-                "match_score": match_score,
-                "analysis": analysis,
-                "resume_type": resume_type,
-                "tech_stack_detected": tech_stack
-            }
+            resume_type = "C# Developer"
+        return self._fallback_match_score(job_description, resume_type, tech_stack)
             
         
     def _fallback_match_score(self, job_description: str, resume_type: str, tech_stack: str) -> Dict[str, Any]:
