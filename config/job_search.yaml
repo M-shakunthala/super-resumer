@@ -1,0 +1,146 @@
+# Job Search Configuration
+# Define your job search preferences and parameters
+
+search_parameters:
+  # Target job titles/keywords
+  keywords:
+    - "Software Engineer"
+    - "Full Stack Developer"
+    - "Backend Developer"
+    - "Data Scientist"
+    - "Machine Learning Engineer"
+
+  # Preferred locations (empty = remote/anywhere)
+  locations:
+    - "Remote"
+    - "San Francisco"
+    - "New York"
+    - "Austin"
+
+  # Experience level
+  experience_levels:
+    - "Entry Level"
+    - "Mid Level"
+    - "Senior Level"
+
+  # Job types
+  job_types:
+    - "Full-time"
+    - "Contract"
+    - "Part-time"
+
+  # Industries to target
+  industries:
+    - "Technology"
+    - "Finance"
+    - "Healthcare"
+
+  # Company size preferences
+  company_sizes:
+    - "1-10 employees"
+    - "11-50 employees"
+    - "51-200 employees"
+    - "201-500 employees"
+    - "501-1000 employees"
+    - "1000+ employees"
+
+filtering:
+  # Minimum match score (0-100)
+  min_match_score: 70
+
+  # Maximum applications per day
+  max_applications_per_day: 20
+
+  # Maximum applications per hour
+  max_applications_per_hour: 5
+
+  # Minimum delay between applications (seconds)
+  min_delay_between_applications: 30
+
+  # Easy Apply only
+  easy_apply_only: true
+
+  # Exclude companies
+  exclude_companies: []
+
+  # Exclude keywords (in job description)
+  exclude_keywords:
+    - "Entry level only"
+    - "Internship"
+    - "Contract to hire"
+
+ai_settings:
+  # AI model for job matching
+  matching_model: "gpt-4"
+
+  # AI model for resume tailoring
+  resume_model: "gpt-4"
+
+  # AI model for cover letter generation
+  cover_letter_model: "gpt-4"
+
+  # Temperature for AI responses (0.0 - 1.0)
+  temperature: 0.7
+
+  # Maximum tokens for AI responses
+  max_tokens: 2000
+
+resume_settings:
+  # Base resume path
+  base_resume_path: "resumes/base_resume.pdf"
+
+  # Output directory for tailored resumes
+  output_dir: "resumes/generated"
+
+  # Resume template
+  template: "professional"
+
+  # Include cover letter
+  include_cover_letter: true
+
+  # Cover letter template
+  cover_letter_template: "professional"
+
+platforms:
+  # LinkedIn settings
+  linkedin:
+    enabled: true
+    max_applications: 15
+    easy_apply_priority: high
+
+  # Workday settings
+  workday:
+    enabled: true
+    max_applications: 5
+    form_autofill: true
+
+  # Greenhouse settings
+  greenhouse:
+    enabled: true
+    max_applications: 5
+    form_autofill: true
+
+scheduling:
+  # Daily schedule
+  discovery_time: "08:00"
+  scoring_time: "09:00"
+  tailoring_time: "10:00"
+  submission_time: "14:00"
+
+  # Enable scheduling
+  enabled: true
+
+  # Timezone
+  timezone: "America/Los_Angeles"
+
+notifications:
+  # Email notifications
+  email_enabled: false
+  email_address: ""
+
+  # Dashboard notifications
+  dashboard_enabled: true
+
+  # Slack notifications
+  slack_enabled: false
+  slack_webhook: ""

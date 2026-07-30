@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  bot:
+    build: .
+    container_name: ai-job-agent-bot
+    restart: unless-stopped
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - MATCH_THRESHOLD=0.6
+    volumes:
+      - ./jobs.db:/app/jobs.db
+      - ./resumes:/app/resumes
+      - ./logs:/app/logs
+      - ./chrome_sessions:/app/chrome_sessions
+    command: python run.py
+
+  dashboard:
+    build: .
+    container_name: ai-job-agent-dashboard
+    restart: unless-stopped
+    ports:
+      - "8501:8501"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    volumes:
+      - ./jobs.db:/app/jobs.db
+    command: streamlit run ui/dashboard.py --server.port=8501 --server.address=0.0.0.0
