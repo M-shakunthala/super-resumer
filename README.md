@@ -1,112 +1,70 @@
-# AI Job Agent
+# Super Resumer
 
-An intelligent AI-powered job application system that automates:
+Super Resumer is an AI-powered job application assistant that helps you discover relevant opportunities, tailor your resume, optimize it for ATS systems, and automate application workflows across major hiring platforms.
 
-- Job discovery
-- Resume tailoring
-- ATS optimization
-- Multi-platform applications
-- AI-generated responses
-- Dashboard analytics
+## Why this project exists
 
-## 🚀 Super Resumer Mode
+This project is designed to reduce the repetitive work involved in job hunting by combining:
 
-**Personalized version for C# and Python AI roles in Bangalore**
+- intelligent job discovery
+- resume tailoring and keyword optimization
+- multi-platform application support
+- tracking and analytics for the application process
 
-- **Dual Resume System**: Automatically selects C# or Python AI resume based on job requirements
-- **85% Match Threshold**: Strict matching using RAG and LangChain
-- **Manual Workflow**: System finds jobs → You review and apply
-- **Bangalore Focus**: 7+ LPA salary requirement
-- **Multi-Source**: LinkedIn, Indeed, Naukri, company websites
+## Key features
 
-**Quick Start for Super Resumer:**
+- Discover jobs from LinkedIn, Workday, Greenhouse, and Lever
+- Tailor resumes to match job descriptions more closely
+- Improve ATS compatibility with targeted optimization
+- Automate application steps with built-in workflow logic
+- Track applications, interviews, and outcomes in a dashboard
+- Support retry and duplicate-prevention logic for smoother execution
+
+## Quick start
+
+1. Clone the repository
+2. Create and activate a Python virtual environment
+3. Install dependencies
 
 ```bash
 pip install -r requirements.txt
-# Add your OpenRouter API key to .env
+```
+
+4. Add your API credentials and configuration to a `.env` file
+5. Launch the app
+
+```bash
 streamlit run run_super_resumer.py
 ```
 
-See [Super Resumer Guide](docs/SUPER_RESUMER_GUIDE.md) for detailed setup.
+For more detailed setup steps, see the documentation in the [docs](docs) directory.
 
-## Features
+## Project structure
 
-### Job Discovery
+- [agents](agents) — core automation and matching logic
+- [core](core) — orchestration and shared application flow
+- [ui](ui) — Streamlit dashboard and user interface
+- [tests](tests) — automated test coverage
+- [docs](docs) — setup, usage, and architecture guides
 
-Automatically discovers jobs from:
+## Documentation
 
-- LinkedIn
-- Workday
-- Greenhouse
-- Lever
+- [Super Resumer Setup Guide](SUPER_RESUMER_SETUP.md)
+- [Super Resumer User Guide](SUPER_RESUMER_USER_GUIDE.md)
+- [Developer and architecture docs](docs)
 
-### Resume Intelligence
+## Testing
 
-- ATS-friendly resume tailoring
-- Job-specific optimization
-- AI keyword enhancement
+Run the test suite with:
 
-### Automation
+```bash
+pytest
+```
 
-- Auto-fill applications
-- Session persistence
-- Retry system
-- Duplicate prevention
+## License
 
-### Dashboard
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
 
-- Job tracking
-- Application analytics
-- Interview tracking
-- Error monitoring
+## Contributing
 
-## Tech Stack
-
-Python  
-Selenium  
-OpenAI API  
-SQLite  
-Streamlit  
-Docker
-
-## Architecture
-
-Job Scraper
-↓
-AI Matcher
-↓
-Resume Optimizer
-↓
-Apply Engine
-↓
-Dashboard
-
-## Setup
-
-pip install -r requirements.txt
-
-streamlit run ui/dashboard.py
-
-## Screenshots
-
-_Note: Screenshots need to be taken. See `screenshots/QUICK_START_SCREENSHOTS.md` for instructions._
-
-### Dashboard Overview
-
-![Dashboard Overview](screenshots/dashboard_overview.png)
-
-### Job Tracking
-
-![Job Tracking](screenshots/job_tracking_table.png)
-
-### Resume Tailoring
-
-![Resume Tailoring](screenshots/resume_tailoring_example.png)
-
-### Application Log
-
-![Application Log](screenshots/successful_apply_log.png)
-
-### Architecture
-
-![Architecture](screenshots/architecture_diagram.png)
+Contributions are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request.
